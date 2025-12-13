@@ -138,6 +138,7 @@ import shutil
 import stock_loader
 import stock_analysis
 import stock_query
+import stock_watchlist
 
 # ---------- Helper: Select Stock by Name OR Number ----------
 def _select_stock(registry):
@@ -303,10 +304,10 @@ if __name__ == "__main__":
         print("3) Reload a stock from disk")
         print("4) Show sample rows (preview)")
         print("5) Generate stock summary")
-        print("6) Query specific date price")  
-        print("7) Exit")
+        print("7) My Watchlist")            
+        print("8) Exit")
 
-        choice = input("Enter choice (1-7): ").strip()
+        choice = input("Enter choice (1-8): ").strip()
 
         if choice == '1':
             list_stocks(all_stocks)
@@ -352,6 +353,9 @@ if __name__ == "__main__":
                      print(result) # Prints error message or "Not found"
                 print(f"-" * 30)
         elif choice == '7':
+            # Launch the Watchlist Menu
+            stock_watchlist.manage_watchlist(all_stocks)
+        elif choice == '8':
             print(f"Goodbye — {len(all_stocks)} stocks loaded.")
             break
         else:
