@@ -1,5 +1,6 @@
 import os
 import csv
+import shutil
 
 
 # ---------- Internal Helpers ----------
@@ -99,3 +100,20 @@ def add_stock_to_registry(registry: dict, stock_name: str, data: list, replace: 
     if key in registry and not replace:
         return
     registry[key] = data
+
+
+
+def save_uploaded_file(source_path):
+    """
+    Copies a file from source_path to the 'data/' folder.
+    Returns the new path if successful.
+    """
+    try:
+        dest_dir = "data"
+        os.makedirs(dest_dir, exist_ok=True)
+        dest_path = os.path.join(dest_dir, os.path.basename(source_path))
+        shutil.copy(source_path, dest_path)
+        return dest_path
+    except Exception as e:
+        print(f"System Error copying file: {e}")
+        return None

@@ -183,16 +183,19 @@ def list_stocks(registry: dict):
         print(f"{name}: {len(data)} rows")
 
 def upload_stock_action(registry: dict):
+    # 1. Get Path
     path = input("Enter full path to the CSV file (or 'cancel' to return): ").strip()
     if path.lower() == 'cancel':
         print("Upload cancelled.")
         return
 
+    # 2. Validate
     valid, meta = stock_loader.validate_csv_structure(path)
     if not valid:
         print(f"Validation failed: {meta.get('error')}")
         return
 
+    # 3. Check for Duplicates
     stock_name = stock_loader.extract_stock_name_from_path(path)
     key = stock_name.upper()
 
@@ -200,26 +203,29 @@ def upload_stock_action(registry: dict):
         while True:
             ans = input(f"Stock '{stock_name}' already exists. (R)eplace / (K)eep existing / (C)ancel? ").lower()
             if ans == 'r':
-                break  # Proceed to upload
+                break
             elif ans == 'k':
                 print("Kept existing stock.")
                 return
             elif ans == 'c':
                 print("Upload cancelled.")
                 return
+            else:
+                print("Invalid choice. Please enter R, K, or C.")
 
-    # Perform the copy and load
-    try:
-        dest_dir = "data"
-        os.makedirs(dest_dir, exist_ok=True)
-        dest_path = os.path.join(dest_dir, os.path.basename(path))
-        shutil.copy(path, dest_path)
-        
-        rows = stock_loader.read_csv_to_list_of_dicts(dest_path)
-        stock_loader.add_stock_to_registry(registry, stock_name, rows, replace=True)
-        print(f"Uploaded {stock_name} — {len(rows)} rows")
-    except Exception as e:
-        print(f"Error during upload: {e}")
+    # 4. Perform the Upload
+    print(f"Uploading {stock_name}...")
+    new_path = stock_loader.save_uploaded_file(path)  # <--- Calls the loader here!
+    
+    if new_path:
+        try:
+            rows = stock_loader.read_csv_to_list_of_dicts(new_path)
+            stock_loader.add_stock_to_registry(registry, stock_name, rows, replace=True)
+            print(f"Successfully uploaded {stock_name} — {len(rows)} rows.")
+        except Exception as e:
+            print(f"Error reading uploaded file: {e}")
+
+
 
 def reload_stock_action(registry: dict):
     # Use our helper to pick the stock
