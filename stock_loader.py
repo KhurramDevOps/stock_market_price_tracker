@@ -117,3 +117,29 @@ def save_uploaded_file(source_path):
     except Exception as e:
         print(f"System Error copying file: {e}")
         return None
+    
+
+# In stock_loader.py (at the very bottom)
+
+def save_csv_file(filename: str, rows: list):
+    """
+    Saves a list of rows to a CSV file inside the 'summary_stocks' folder.
+    Creates the folder automatically if it doesn't exist.
+    """
+    try:
+        # 1. Define the specific folder
+        folder = "summary_stocks"
+        os.makedirs(folder, exist_ok=True)  # Create folder if missing
+
+        # 2. Combine folder + filename (e.g., summary_stocks/Summary_APPLE.csv)
+        full_path = os.path.join(folder, filename)
+
+        # 3. Write the file
+        with open(full_path, mode='w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerows(rows)
+        
+        return full_path  # Return the full path to confirm success
+    except Exception as e:
+        print(f"Error saving file: {e}")
+        return None

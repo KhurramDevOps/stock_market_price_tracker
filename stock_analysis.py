@@ -70,6 +70,22 @@ def generate_stock_summary(registry, stock_name):
         print(f"10-Day Low:        {lowest_price:,.2f}")
         print(f"Avg Volume:        {int(avg_volume):,}")
         print(f"{'='*40}\n")
-
     except Exception as e:
         print(f"An error occurred while calculating summary: {e}")
+
+    summary_data = [
+        ["Metric", "Value"],
+        ["Stock Name", key],
+        ["Analysis Period", f"Last {len(recent_data)} Days"],
+        ["From Date", start_row.get('date')],
+        ["To Date", current_row.get('date')],
+        ["Current Price", current_close],
+        ["Price Change", price_change],
+        ["Percent Change", f"{pct_change:.2f}%"],
+        ["10-Day High", highest_price],
+        ["10-Day Low", lowest_price],
+        ["Avg Volume", int(avg_volume)]
+    ]
+
+    return summary_data
+    

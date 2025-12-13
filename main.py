@@ -317,10 +317,21 @@ if __name__ == "__main__":
         elif choice == '4':
             preview_stock_action(all_stocks)
         elif choice == '5':
-            # Use helper to pick stock, then call analysis
             s_name = _select_stock(all_stocks)
             if s_name:
-                stock_analysis.generate_stock_summary(all_stocks, s_name)
+                # 1. This prints the summary AND returns the data
+                data_to_save = stock_analysis.generate_stock_summary(all_stocks, s_name)
+                
+                # 2. Ask User if they want to save
+                if data_to_save:
+                    save_ans = input("Do you want to save this summary? (y/n): ").strip().lower()
+                    if save_ans == 'y':
+                        # 3. Create filename and call loader
+                        filename = f"Summary_{s_name}.csv"
+                        saved_path = stock_loader.save_csv_file(filename, data_to_save)
+                        
+                        if saved_path:
+                            print(f"Success! Saved to: {saved_path}")
         elif choice == '6':
             # 1. Select Stock
             s_name = _select_stock(all_stocks)
