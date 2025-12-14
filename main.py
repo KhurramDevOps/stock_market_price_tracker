@@ -1,144 +1,10 @@
-# import os
-# import shutil
-# # Import our split modules
-# import stock_loader
-# import stock_analysis
-
-# # ---------- Menu Helper Functions ----------
-
-# def list_stocks(registry: dict):
-#     if not registry:
-#         print("No stocks loaded.")
-#         return
-#     print("\n--- Loaded Stocks ---")
-#     for name, data in registry.items():
-#         print(f"{name}: {len(data)} rows")
-#     print("---------------------")
-
-# def upload_stock_action(registry: dict):
-#     path = input("Enter full path to the CSV file (or 'cancel'): ").strip()
-#     if path.lower() == 'cancel':
-#         return
-
-#     # Use logic from stock_loader
-#     valid, meta = stock_loader.validate_csv_structure(path)
-#     if not valid:
-#         print(f"Validation failed: {meta.get('error')}")
-#         return
-
-#     stock_name = stock_loader.extract_stock_name_from_path(path)
-#     key = stock_name.upper()
-
-#     if key in registry:
-#         ans = input(f"Stock '{stock_name}' exists. (R)eplace / (K)eep / (C)ancel? ").lower()
-#         if ans == 'k' or ans == 'c':
-#             return
-    
-#     try:
-#         dest_dir = "data"
-#         os.makedirs(dest_dir, exist_ok=True)
-#         dest_path = os.path.join(dest_dir, os.path.basename(path))
-#         shutil.copy(path, dest_path)
-        
-#         rows = stock_loader.read_csv_to_list_of_dicts(dest_path)
-#         stock_loader.add_stock_to_registry(registry, stock_name, rows, replace=True)
-#         print(f"Successfully uploaded {stock_name}.")
-#     except Exception as e:
-#         print(f"Error during upload: {e}")
-
-# def reload_stock_action(registry: dict):
-#     if not registry:
-#         print("No stocks to reload.")
-#         return
-#     name = input("Enter stock name to reload: ").strip().upper()
-    
-#     filename = None
-#     data_dir = "data"
-#     if os.path.exists(data_dir):
-#         for f in os.listdir(data_dir):
-#             if stock_loader.extract_stock_name_from_path(f) == name:
-#                 filename = f
-#                 break
-    
-#     if filename:
-#         path = os.path.join(data_dir, filename)
-#         try:
-#             rows = stock_loader.read_csv_to_list_of_dicts(path)
-#             stock_loader.add_stock_to_registry(registry, name, rows, replace=True)
-#             print(f"Reloaded {name}.")
-#         except Exception as e:
-#             print(f"Error: {e}")
-#     else:
-#         print(f"File for {name} not found in data/ folder.")
-
-# def preview_stock_action(registry: dict):
-#     name = input("Enter stock name to preview: ").strip().upper()
-#     if name not in registry:
-#         print("Stock not found.")
-#         return
-#     data = registry[name]
-#     print(f"\nFirst 5 rows for {name}:")
-#     for row in data[:5]:
-#         print(row)
-
-# # ---------- Main Execution ----------
-
-# if __name__ == "__main__":
-#     all_stocks = {}
-
-#     # 1. Preload stocks from data/ folder
-#     data_dir = "data/"
-#     if os.path.exists(data_dir):
-#         print("Preloading stocks...")
-#         for filename in os.listdir(data_dir):
-#             path = os.path.join(data_dir, filename)
-#             if stock_loader.is_csv_file(path):
-#                 try:
-#                     rows = stock_loader.read_csv_to_list_of_dicts(path)
-#                     s_name = stock_loader.extract_stock_name_from_path(path)
-#                     stock_loader.add_stock_to_registry(all_stocks, s_name, rows)
-#                     print(f" - Loaded {s_name}")
-#                 except Exception:
-#                     pass
-#     else:
-#         os.makedirs(data_dir, exist_ok=True)
-
-#     # 2. Main Menu Loop
-#     while True:
-#         print("\n=== STOCK TRACKER MENU ===")
-#         print("1) List loaded stocks")
-#         print("2) Upload stock CSV")
-#         print("3) Reload stock")
-#         print("4) Preview stock data")
-#         print("5) Generate Stock Summary")
-#         print("6) Exit")
-        
-#         choice = input("Choice: ").strip()
-
-#         if choice == '1':
-#             list_stocks(all_stocks)
-#         elif choice == '2':
-#             upload_stock_action(all_stocks)
-#         elif choice == '3':
-#             reload_stock_action(all_stocks)
-#         elif choice == '4':
-#             preview_stock_action(all_stocks)
-#         elif choice == '5':
-#             s_name = input("Enter stock name: ")
-#             stock_analysis.generate_stock_summary(all_stocks, s_name)
-#         elif choice == '6':
-#             print("Goodbye!")
-#             break
-#         else:
-#             print("Invalid choice.")
-
 # main.py
 import os
-import shutil
 import stock_loader
 import stock_analysis
 import stock_query
 import stock_watchlist
+import stock_portfolio
 
 # ---------- Helper: Select Stock by Name OR Number ----------
 def _select_stock(registry):
@@ -304,8 +170,9 @@ if __name__ == "__main__":
         print("3) Reload a stock from disk")
         print("4) Show sample rows (preview)")
         print("5) Generate stock summary")
-        print("7) My Watchlist")
-        print("8) Strategy Advisor (Buy/Sell Signals)")
+        print("6) My Watchlist")
+        print("7) Strategy Advisor (Buy/Sell Signals)")
+        print("8) Portfolio Performance Tracker") 
         print("9) Exit")
 
         choice = input("Enter choice (1-9): ").strip()
@@ -361,6 +228,10 @@ if __name__ == "__main__":
             if s_name:
                 stock_analysis.analyze_buy_sell_signals(all_stocks, s_name)
         elif choice == '9':
+            s_name = _select_stock(all_stocks)
+            if s_name:
+                stock_portfolio.track_performance(all_stocks, s_name)
+        elif choice == '10':
             print(f"Goodbye — {len(all_stocks)} stocks loaded.")
             break
         else:
