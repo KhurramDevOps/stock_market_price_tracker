@@ -72,7 +72,7 @@ def generate_stock_summary(registry, stock_name):
         print(f"{'='*40}\n")
     except Exception as e:
         print(f"An error occurred while calculating summary: {e}")
-
+        
     summary_data = [
         ["Metric", "Value"],
         ["Stock Name", key],
@@ -88,4 +88,3 @@ def generate_stock_summary(registry, stock_name):
     ]
 
     return summary_data
-    
