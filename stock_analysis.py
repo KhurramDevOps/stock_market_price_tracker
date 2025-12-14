@@ -88,3 +88,106 @@ def generate_stock_summary(registry, stock_name):
     ]
 
     return summary_data
+
+def _calculate_sma(prices, period):
+    """
+    Helper function: Calculates Simple Moving Average for a list of prices.
+    Returns a list of SMA values matching the length of input prices.
+    """
+    sma_values = []
+    for i in range(len(prices)):
+        if i + 1 < period:
+            # Not enough data yet (e.g., day 3 of a 10-day average)
+            sma_values.append(None) 
+        else:
+            # Calculate average of the window
+            window = prices[i - period + 1 : i + 1]
+            avg = sum(window) / period
+            sma_values.append(avg)
+    return sma_values
+
+def analyze_buy_sell_signals(registry, stock_name):
+    """
+    Identifies 'Golden Cross' (Buy) and 'Death Cross' (Sell) points.
+    Includes CURRENT TREND status.
+    """
+    key = stock_name.strip().upper()
+    if key not in registry:
+        print(f"Error: Stock '{key}' not found.")
+        return
+
+    data = registry[key]
+    # Reverse data so it is chronological (Oldest -> Newest)
+    prices = [row['close'] for row in data][::-1]
+    dates = [row['date'] for row in data][::-1]
+
+    if len(prices) < 11:
+        print("Not enough data to calculate signals.")
+        return
+
+    # Define Periods
+    short_window = 5
+    long_window = 10
+
+    # Calculate SMAs
+    short_sma = _calculate_sma(prices, short_window)
+    long_sma = _calculate_sma(prices, long_window)
+
+    print(f"\n{'='*60}")
+    print(f"   BUY/SELL SIGNALS REPORT: {key}")
+    print(f"{'='*60}")
+    print(f"Strategy: SMA Cross (Short={short_window} vs Long={long_window})")
+    print("-" * 60)
+    print(f"{'Date':<12} | {'Signal':<10} | {'Price':<8} | {'Short SMA':<9} | {'Long SMA':<9}")
+    print("-" * 60)
+
+    found_any = False
+    
+    # 1. Historical Signals Loop
+    for i in range(long_window, len(prices)):
+        curr_short = short_sma[i]
+        curr_long = long_sma[i]
+        prev_short = short_sma[i-1]
+        prev_long = long_sma[i-1]
+
+        if None in [curr_short, curr_long, prev_short, prev_long]: continue
+
+        date = dates[i]
+        price = prices[i]
+        
+        # BUY SIGNAL
+        if prev_short <= prev_long and curr_short > curr_long:
+            print(f"{date:<12} | 🟢 BUY     | ${price:<7.2f} | {curr_short:<9.2f} | {curr_long:<9.2f}")
+            found_any = True
+            
+        # SELL SIGNAL
+        elif prev_short >= prev_long and curr_short < curr_long:
+            print(f"{date:<12} | 🔴 SELL    | ${price:<7.2f} | {curr_short:<9.2f} | {curr_long:<9.2f}")
+            found_any = True
+
+    if not found_any:
+        print("No crossover signals found in this period.")
+
+    # --- 2. CURRENT STATUS (The 'What to do now' part) ---
+    last_short = short_sma[-1]
+    last_long = long_sma[-1]
+    last_price = prices[-1]
+    
+    print("-" * 60)
+    print("CURRENT TREND ANALYSIS (As of today):")
+    print(f" > Short SMA ({short_window} days): ${last_short:.2f}")
+    print(f" > Long SMA  ({long_window} days): ${last_long:.2f}")
+    
+    diff = last_short - last_long
+    
+    if last_short > last_long:
+        status = "BULLISH (Upward Trend)"
+        advice = "Hold or Buy. The trend is positive."
+    else:
+        status = "BEARISH (Downward Trend)"
+        advice = "Sell or Stay Out. The trend is negative."
+        
+    print(f" > Status: {status}")
+    print(f" > Gap:    {diff:+.2f} (Difference between lines)")
+    print(f" > Advice: {advice}")
+    print(f"{'='*60}\n")

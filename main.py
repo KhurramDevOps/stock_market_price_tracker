@@ -304,10 +304,11 @@ if __name__ == "__main__":
         print("3) Reload a stock from disk")
         print("4) Show sample rows (preview)")
         print("5) Generate stock summary")
-        print("7) My Watchlist")            
-        print("8) Exit")
+        print("7) My Watchlist")
+        print("8) Strategy Advisor (Buy/Sell Signals)")
+        print("9) Exit")
 
-        choice = input("Enter choice (1-8): ").strip()
+        choice = input("Enter choice (1-9): ").strip()
 
         if choice == '1':
             list_stocks(all_stocks)
@@ -356,6 +357,10 @@ if __name__ == "__main__":
             # Launch the Watchlist Menu
             stock_watchlist.manage_watchlist(all_stocks)
         elif choice == '8':
+            s_name = _select_stock(all_stocks)
+            if s_name:
+                stock_analysis.analyze_buy_sell_signals(all_stocks, s_name)
+        elif choice == '9':
             print(f"Goodbye — {len(all_stocks)} stocks loaded.")
             break
         else:
