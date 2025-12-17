@@ -1,4 +1,3 @@
-# main.py
 import os
 import stock_loader
 import stock_analysis
@@ -13,96 +12,119 @@ def _select_stock(registry):
     Returns the selected stock name (key) or None if invalid.
     """
     if not registry:
-        print("No stocks loaded.")
+        print("\n[!] No stocks loaded. Please upload a CSV first.")
         return None
 
-    print("Loaded stocks:")
+    print("\n--- Available Stocks ---")
     names = list(registry.keys())
     for i, name in enumerate(names, 1):
-        print(f"{i}) {name}")
+        # We can try to show row count if we want, but simple is clean
+        print(f" {i}. {name}")
+    print("------------------------")
 
-    choice = input("Enter stock name or number: ").strip()
+    choice = input("Select stock (Name or Number): ").strip()
     
-    # 1. Try to handle as a Number (e.g., "1")
+    # 1. Handle Number Input
     if choice.isdigit():
         idx = int(choice) - 1
         if 0 <= idx < len(names):
             return names[idx]
         else:
-            print("Invalid number.")
+            print("❌ Invalid number.")
             return None
     
-    # 2. Handle as a Name (e.g., "APPLE")
+    # 2. Handle Text Input
     key = choice.upper()
     if key in registry:
         return key
     else:
-        print(f"Stock '{key}' not found.")
+        print(f"❌ Stock '{key}' not found.")
         return None
 
-# ---------- Menu Actions (Formatted to match your original) ----------
+# ---------- Menu Display Function ----------
+def print_main_menu():
+    print("\n" + "="*60)
+    print("       📈  STOCK MARKET PRICE TRACKER V1.0  📉")
+    print("="*60)
+    
+    print(" [ DATA MANAGEMENT ]")
+    print("  1) List Loaded Stocks")
+    print("  2) Upload New Stock (CSV)")
+    print("  3) Reload Stock from Disk")
+    print("  4) Preview Raw Data")
+    
+    print("\n [ ANALYSIS & INSIGHTS ]")
+    print("  5) Generate Stock Summary (Stats & Export)")
+    print("  6) Query Price by Date")
+    print("  7) My Watchlist Dashboard")
+    
+    print("\n [ PRO TOOLS ]")
+    print("  8) Strategy Advisor (SMA Buy/Sell Signals)")
+    print("  9) Portfolio Performance Simulator")
+    
+    print("\n [ SYSTEM ]")
+    print("  10) Exit")
+    print("="*60)
 
-def list_stocks(registry: dict):
+# ---------- Action Wrappers ----------
+
+def list_stocks(registry):
     if not registry:
-        print("No stocks loaded.")
+        print("\n[!] No stocks loaded.")
         return
+    print("\n" + "-"*40)
+    print(f"{'Stock Name':<15} | {'Rows Loaded'}")
+    print("-" * 40)
     for name, data in registry.items():
-        print(f"{name}: {len(data)} rows")
+        print(f"{name:<15} | {len(data)}")
+    print("-" * 40)
 
-def upload_stock_action(registry: dict):
-    # 1. Get Path
-    path = input("Enter full path to the CSV file (or 'cancel' to return): ").strip()
+def upload_stock_action(registry):
+    print("\n--- Upload New Stock ---")
+    path = input("Enter full path to CSV (or 'cancel'): ").strip()
     if path.lower() == 'cancel':
-        print("Upload cancelled.")
         return
 
-    # 2. Validate
+    # Validate
     valid, meta = stock_loader.validate_csv_structure(path)
     if not valid:
-        print(f"Validation failed: {meta.get('error')}")
+        print(f"❌ Validation failed: {meta.get('error')}")
         return
 
-    # 3. Check for Duplicates
+    # Check Duplicates
     stock_name = stock_loader.extract_stock_name_from_path(path)
     key = stock_name.upper()
 
     if key in registry:
         while True:
-            ans = input(f"Stock '{stock_name}' already exists. (R)eplace / (K)eep existing / (C)ancel? ").lower()
-            if ans == 'r':
-                break
-            elif ans == 'k':
-                print("Kept existing stock.")
-                return
-            elif ans == 'c':
-                print("Upload cancelled.")
-                return
-            else:
-                print("Invalid choice. Please enter R, K, or C.")
+            ans = input(f"⚠️  Stock '{stock_name}' exists. (R)eplace / (K)eep / (C)ancel? ").lower()
+            if ans == 'r': break
+            elif ans == 'k': return
+            elif ans == 'c': return
 
-    # 4. Perform the Upload
+    # Perform Upload
     print(f"Uploading {stock_name}...")
-    new_path = stock_loader.save_uploaded_file(path)  # <--- Calls the loader here!
+    new_path = stock_loader.save_uploaded_file(path)
     
     if new_path:
         try:
             rows = stock_loader.read_csv_to_list_of_dicts(new_path)
             stock_loader.add_stock_to_registry(registry, stock_name, rows, replace=True)
-            print(f"Successfully uploaded {stock_name} — {len(rows)} rows.")
+            print(f"✅ Successfully loaded {stock_name} ({len(rows)} rows)")
         except Exception as e:
-            print(f"Error reading uploaded file: {e}")
+            print(f"❌ Error reading file: {e}")
 
-
-
-def reload_stock_action(registry: dict):
-    # Use our helper to pick the stock
-    name = _select_stock(registry)
-    if not name:
+def reload_stock_action(registry):
+    if not registry:
+        print("No stocks to reload.")
         return
+    
+    name = _select_stock(registry)
+    if not name: return
 
-    # Find the file
-    filename = None
+    # Check data folder
     data_dir = "data"
+    filename = None
     if os.path.exists(data_dir):
         for f in os.listdir(data_dir):
             if stock_loader.extract_stock_name_from_path(f) == name:
@@ -114,23 +136,22 @@ def reload_stock_action(registry: dict):
         try:
             rows = stock_loader.read_csv_to_list_of_dicts(path)
             stock_loader.add_stock_to_registry(registry, name, rows, replace=True)
-            print(f"Reloaded {name} — {len(rows)} rows")
+            print(f"✅ Reloaded {name} from disk.")
         except Exception as e:
             print(f"Error: {e}")
     else:
-        print(f"Local file for {name} not found in data/; please upload first.")
+        print(f"❌ File for {name} not found in 'data/' folder.")
 
-def preview_stock_action(registry: dict):
-    # Use our helper to pick the stock
+def preview_stock_action(registry):
     name = _select_stock(registry)
-    if not name:
-        return
+    if not name: return
 
     data = registry[name]
     n = min(5, len(data))
-    print(f"First {n} rows for {name}:")
-    # THE NICE TABLE FORMATTING YOU WANTED
-    print("Date\t\tOpen\tHigh\tLow\tClose\tVolume")
+    print(f"\nFirst {n} rows for {name}:")
+    print("-" * 65)
+    print(f"{'Date':<12} | {'Open':<8} | {'High':<8} | {'Low':<8} | {'Close':<8} | {'Volume'}")
+    print("-" * 65)
     for row in data[:n]:
         d = row.get('date', '')
         o = row.get('open', '')
@@ -138,16 +159,18 @@ def preview_stock_action(registry: dict):
         l = row.get('low', '')
         c = row.get('close', '')
         v = row.get('volume', '')
-        print(f"{d}\t{o}\t{h}\t{l}\t{c}\t{v}")
+        print(f"{d:<12} | {o:<8} | {h:<8} | {l:<8} | {c:<8} | {v}")
+    print("-" * 65)
 
 # ---------- Main Execution ----------
 
 if __name__ == "__main__":
     all_stocks = {}
 
-    # 1. Preload stocks
+    # 1. Auto-Load existing data
     data_dir = "data/"
     if os.path.exists(data_dir):
+        print("Initializing System...")
         for filename in os.listdir(data_dir):
             path = os.path.join(data_dir, filename)
             if stock_loader.is_csv_file(path):
@@ -155,84 +178,74 @@ if __name__ == "__main__":
                     rows = stock_loader.read_csv_to_list_of_dicts(path)
                     s_name = stock_loader.extract_stock_name_from_path(path)
                     stock_loader.add_stock_to_registry(all_stocks, s_name, rows)
-                    print(f"Preloaded {s_name}: {len(rows)} rows")
+                    # print(f" [OK] Loaded {s_name}") # Optional: keep startup silent or verbose
                 except Exception:
                     pass
     else:
         os.makedirs(data_dir, exist_ok=True)
-        print("Data directory not found; starting with no stocks.")
 
-    # 2. Main Menu Loop
+    # 2. Main Loop
     while True:
-        print("\nMain Menu — choose an option:")
-        print("1) List loaded stocks")
-        print("2) Upload stock CSV")
-        print("3) Reload a stock from disk")
-        print("4) Show sample rows (preview)")
-        print("5) Generate stock summary")
-        print("6) My Watchlist")
-        print("7) Strategy Advisor (Buy/Sell Signals)")
-        print("8) Portfolio Performance Tracker") 
-        print("9) Exit")
-
-        choice = input("Enter choice (1-9): ").strip()
+        print_main_menu()
+        choice = input("Enter choice (1-10): ").strip()
 
         if choice == '1':
             list_stocks(all_stocks)
+        
         elif choice == '2':
             upload_stock_action(all_stocks)
+        
         elif choice == '3':
             reload_stock_action(all_stocks)
+        
         elif choice == '4':
             preview_stock_action(all_stocks)
+        
         elif choice == '5':
+            # Summary & Export
             s_name = _select_stock(all_stocks)
             if s_name:
-                # 1. This prints the summary AND returns the data
                 data_to_save = stock_analysis.generate_stock_summary(all_stocks, s_name)
-                
-                # 2. Ask User if they want to save
                 if data_to_save:
-                    save_ans = input("Do you want to save this summary? (y/n): ").strip().lower()
+                    save_ans = input("💾 Save this summary to CSV? (y/n): ").strip().lower()
                     if save_ans == 'y':
-                        # 3. Create filename and call loader
-                        filename = f"Summary_{s_name}.csv"
-                        saved_path = stock_loader.save_csv_file(filename, data_to_save)
-                        
-                        if saved_path:
-                            print(f"Success! Saved to: {saved_path}")
+                        fname = f"Summary_{s_name}.csv"
+                        path = stock_loader.save_csv_file(fname, data_to_save)
+                        if path: print(f"✅ Saved to: {path}")
+
         elif choice == '6':
-            # 1. Select Stock
+            # Query Date
             s_name = _select_stock(all_stocks)
             if s_name:
-                # 2. Ask for Date
-                date_input = input("Enter date  month/date/year (e.g., 12/12/2025): ").strip()
-                
-                # 3. Call the function from the new file
-                result = stock_query.get_price_by_date(all_stocks, s_name, date_input)
-                
-                # 4. Show Result
-                print(f"-" * 30)
-                if isinstance(result, float):
-                     print(f"Stock: {s_name}")
-                     print(f"Date:  {date_input}")
-                     print(f"Close: ${result:,.2f}")
+                date_in = input("Enter date (MM/DD/YYYY): ").strip()
+                res = stock_query.get_price_by_date(all_stocks, s_name, date_in)
+                print("-" * 30)
+                if isinstance(res, float):
+                    print(f"📅 Date:  {date_in}")
+                    print(f"💵 Price: ${res:,.2f}")
                 else:
-                     print(result) # Prints error message or "Not found"
-                print(f"-" * 30)
+                    print(f"⚠️  {res}")
+                print("-" * 30)
+
         elif choice == '7':
-            # Launch the Watchlist Menu
+            # Watchlist
             stock_watchlist.manage_watchlist(all_stocks)
+
         elif choice == '8':
+            # Strategy Advisor
             s_name = _select_stock(all_stocks)
             if s_name:
                 stock_analysis.analyze_buy_sell_signals(all_stocks, s_name)
+
         elif choice == '9':
+            # Portfolio Simulator
             s_name = _select_stock(all_stocks)
             if s_name:
                 stock_portfolio.track_performance(all_stocks, s_name)
+
         elif choice == '10':
-            print(f"Goodbye — {len(all_stocks)} stocks loaded.")
+            print("\n👋 Exiting Program. Goodbye!")
             break
+        
         else:
-            print("Invalid choice. Try again.")
+            print("\n❌ Invalid choice. Please try again.")
